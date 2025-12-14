@@ -1,3 +1,4 @@
+
 import fitz
 import pytesseract
 from PIL import Image
@@ -7,7 +8,8 @@ import youtube_transcript_api
 from bs4 import BeautifulSoup
 import whisper
 
-model_whisper = whisper.load_model("small")
+# Lazy load tiny model for low memory usage
+model_whisper = None
 
 def extract_pdf(file_bytes):
     doc = fitz.open(stream=file_bytes, filetype="pdf")
@@ -21,6 +23,9 @@ def extract_image(file_bytes):
     return pytesseract.image_to_string(image)
 
 def extract_audio(file_bytes):
+    global model_whisper
+    if model_whisper is None:
+        model_whisper = whisper.load_model("tiny")
     temp = "temp_audio.wav"
     with open(temp, "wb") as f:
         f.write(file_bytes)
