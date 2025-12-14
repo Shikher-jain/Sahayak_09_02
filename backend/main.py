@@ -6,7 +6,8 @@ from backend.db import add_chunk, init_db
 
 import os
 
-PDF_FOLDER = os.path.join("..", "data", "pdf_storage")
+# Use absolute path for deployment compatibility
+PDF_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "pdf_storage")
 os.makedirs(PDF_FOLDER, exist_ok=True)
 app = FastAPI()
 init_db()
