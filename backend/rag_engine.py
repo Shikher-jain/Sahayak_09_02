@@ -1,5 +1,5 @@
-from embedder import embed_text
-from db import build_faiss_index
+from backend.embedder import embed_text
+from backend.db import build_faiss_index
 import numpy as np
 
 def answer_question(question, top_k=5):

@@ -1,3 +1,4 @@
+
 from sentence_transformers import SentenceTransformer
 
 # Use a local embedding model, e.g., 'all-MiniLM-L6-v2'

@@ -1,8 +1,8 @@
 from fastapi import FastAPI, UploadFile
-from .extractor import *
-from .rag_engine import answer_question
-from .embedder import embed_text
-from .db import add_chunk, init_db
+from backend.extractor import *
+from backend.rag_engine import answer_question
+from backend.embedder import embed_text
+from backend.db import add_chunk, init_db
 
 import os
 
