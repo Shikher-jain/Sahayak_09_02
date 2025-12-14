@@ -6,7 +6,6 @@ Pillow
 requests
 youtube-transcript-api
 beautifulsoup4
-git+https://github.com/openai/whisper.git
 faiss-cpu
 sentence-transformers
 numpy
