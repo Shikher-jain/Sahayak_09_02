@@ -6,9 +6,11 @@ st.title("📄 AI Teaching Assistant - Multi-PDF Memory")
 file = st.file_uploader("Upload PDF/Image")
 question = st.text_input("Ask your question")
 
+BACKEND_URL = "https://sahayak-09-02.onrender.com"
+
 if file:
     try:
-        res = requests.post("http://localhost:8000/upload", files={"file": file})
+        res = requests.post(f"{BACKEND_URL}/upload", files={"file": file})
         response_data = res.json()
         if "error" in response_data:
             st.error(f"Upload failed: {response_data['error']}")
@@ -22,7 +24,7 @@ if st.button("Ask"):
         st.warning("Please enter a question first!")
     else:
         try:
-            res = requests.get("http://localhost:8000/ask", params={"question": question})
+            res = requests.get(f"{BACKEND_URL}/ask", params={"question": question})
             response_data = res.json()
             if "error" in response_data:
                 st.error(f"Error: {response_data['error']}")
