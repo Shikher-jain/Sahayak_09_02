@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+PyMuPDF
+pytesseract
+Pillow
+requests
+youtube-transcript-api
+beautifulsoup4
+whisper
+faiss-cpu
+sentence-transformers
+numpy
