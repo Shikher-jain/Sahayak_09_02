@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+openai
+qdrant-client
+PyMuPDF
+pytesseract
+Pillow
+requests
+youtube-transcript-api
+beautifulsoup4
+whisper
