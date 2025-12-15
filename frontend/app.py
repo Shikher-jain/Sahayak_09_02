@@ -6,11 +6,13 @@ st.title("📄 AI Teaching Assistant - Multi-PDF Memory")
 file = st.file_uploader("Upload PDF/Image")
 question = st.text_input("Ask your question")
 
-BACKEND_URL = "https://sahayak-09-02.onrender.com"
+BACKEND_URL = "http://localhost:8000"
+# BACKEND_URL = "https://sahayak-09-02.onrender.com"  # Example for deployed backend
 
 if file:
     try:
         res = requests.post(f"{BACKEND_URL}/upload", files={"file": file})
+
         response_data = res.json()
         if "error" in response_data:
             st.error(f"Upload failed: {response_data['error']}")
