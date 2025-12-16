@@ -2,11 +2,18 @@ services:
   - type: web
     name: sahayak-backend
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    plan: starter  # Use paid plan for ML workloads
+    buildCommand: |
+      pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+      pip install --no-cache-dir -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 120
     envVars:
       - key: COSDATA_URL
         value: http://127.0.0.1:8443
       - key: COSDATA_API_KEY
         value: admin
+      - key: TRANSFORMERS_NO_ADVISORY_WARNINGS
+        value: "1"
+      - key: TOKENIZERS_PARALLELISM
+        value: "false"
     healthCheckPath: /health
