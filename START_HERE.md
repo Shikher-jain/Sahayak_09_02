@@ -1,7 +1,24 @@
-# 🚀 QUICK START - Localhost
+# 🚀 QUICK START
 
-## 3 Commands to Run:
+## Option 1: 🐳 Docker (Recommended - No Setup!)
 
+**One command to run everything:**
+```bash
+docker-compose up --build
+```
+
+**Open:** http://localhost:8501
+
+✅ No Python, Tesseract, or Cosdata installation needed!  
+✅ Works on Windows/Mac/Linux without binary issues!
+
+[📖 Full Docker Guide](DOCKER_GUIDE.md)
+
+---
+
+## Option 2: 💻 Localhost (Manual Setup)
+
+**3 Commands to Run:**
 ```bash
 # Terminal 1: Start Cosdata (Git Bash)
 start-cosdata
@@ -62,6 +79,7 @@ cd frontend && streamlit run app.py
 ## 🔧 Configuration:
 
 **No .env file needed!** Everything uses defaults:
+
 - Backend: `http://localhost:8000`
 - Frontend: `http://localhost:8501`
 - Cosdata: `http://127.0.0.1:8443`
@@ -90,23 +108,27 @@ cd frontend && streamlit run app.py
 
 ## 🆘 Quick Fixes:
 
-**Backend not starting?**
+**Docker:**
 ```bash
-pip install -r requirements.txt
-```
-
-**Cosdata not connecting?**
-```bash
-# Check if running
-curl http://127.0.0.1:8443
+# View logs
+docker-compose logs -f
 
 # Restart
-start-cosdata
+docker-compose restart backend
+
+# Clean rebuild
+docker-compose down && docker-compose up --build
 ```
 
-**Port conflict?**
+**Localhost:**
 ```bash
-# Use different port
+# Install dependencies
+pip install -r requirements.txt
+
+# Check Cosdata
+curl http://127.0.0.1:8443
+
+# Different port
 uvicorn backend.main:app --port 8001
 ```
 
