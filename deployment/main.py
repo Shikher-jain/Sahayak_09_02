@@ -6,6 +6,9 @@ from backend.embedder import embed_text
 from backend.db import add_chunk, init_db
 import os
 
+# Prevent tokenizer threading issues in deployment
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 # Use absolute path for compatibility
 PDF_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "pdf_storage")
 os.makedirs(PDF_FOLDER, exist_ok=True)
@@ -21,12 +24,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Cosdata on startup
-print("\n" + "="*60)
-print("🚀 Initializing Sahayak AI Teaching Assistant")
-print("="*60)
-init_db()
-print("="*60 + "\n")
+# Initialize on startup event (prevents port detection issues)
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services AFTER server starts listening on port"""
+    print("\n" + "="*60)
+    print("🚀 Sahayak AI Teaching Assistant - Starting up")
+    print("="*60)
+    try:
+        init_db()
+        print("✓ Database initialized")
+    except Exception as e:
+        print(f"⚠️  DB init warning: {e}")
+    print("="*60 + "\n")
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):

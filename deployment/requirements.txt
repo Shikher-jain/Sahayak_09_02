@@ -1,0 +1,16 @@
+# Requirements for Deployment (Memory-optimized)
+
+fastapi
+uvicorn[standard]
+python-multipart
+PyMuPDF
+pytesseract
+Pillow
+requests
+youtube-transcript-api
+beautifulsoup4
+numpy
+httpx
+
+# Lightweight deployment - no ML models
+# Use HuggingFace Inference API or separate ML service for embeddings
