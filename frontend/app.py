@@ -1,13 +1,14 @@
 import streamlit as st
 import requests
+import os
 
 st.title("📄 AI Teaching Assistant - Multi-PDF Memory")
 
 file = st.file_uploader("Upload PDF/Image")
 question = st.text_input("Ask your question")
 
-BACKEND_URL = "http://localhost:8000"
-# BACKEND_URL = "https://sahayak-09-02.onrender.com"  # Example for deployed backend
+# Use environment variable for backend URL (Streamlit Cloud will use deployed URL)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 if file:
     try:
