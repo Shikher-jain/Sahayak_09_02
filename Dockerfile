@@ -17,7 +17,10 @@ ENV PYTHONUNBUFFERED=1
 # Copy requirements
 COPY requirements.txt ./
 
-# Install dependencies (no PyTorch for lightweight deployment)
+# DEPLOYMENT: Install CPU-only PyTorch for deployment (uncomment for production)
+# RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code

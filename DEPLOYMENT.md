@@ -63,6 +63,7 @@
 ## ⚠️ Important Notes
 
 ### Cosdata Database:
+
 - Free tiers don't support running Cosdata server
 - **Solution:** Your code automatically falls back to **in-memory storage**
 - Works perfectly for demo/testing
@@ -71,11 +72,13 @@
   - Or use Qdrant Cloud (free tier available)
 
 ### OCR (Tesseract):
+
 - ✅ Render: Install via `apt-packages.txt`
 - ✅ Streamlit Cloud: Install via `packages.txt`
 - ✅ Railway: Install in Dockerfile
 
 ### Free Tier Limitations:
+
 | Platform | Pros | Cons |
 |----------|------|------|
 | **Render** | Easy, reliable | Sleeps after 15 min |
