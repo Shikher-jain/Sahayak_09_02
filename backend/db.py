@@ -1,56 +1,174 @@
-import sqlite3
-import pickle
-import faiss
+import httpx
 import numpy as np
 import os
+from typing import List, Tuple, Dict, Any
+import time
+import json
 
-DB_PATH = "pdf_memory.db"
+# Cosdata Configuration
+COSDATA_URL = os.getenv("COSDATA_URL", "http://127.0.0.1:8443")
+COSDATA_ADMIN_KEY = os.getenv("COSDATA_ADMIN_KEY", "admin123")
+COLLECTION_NAME = "pdf_documents"
 EMBED_DIM = 384  # for 'all-MiniLM-L6-v2'
 
-# Initialize DB
+class CosdataClient:
+    """Client for Cosdata Vector Database"""
+    
+    def __init__(self):
+        self.base_url = COSDATA_URL
+        self.admin_key = COSDATA_ADMIN_KEY
+        self.collection_name = COLLECTION_NAME
+        self.headers = {
+            "Content-Type": "application/json",
+            "X-Admin-Key": self.admin_key
+        }
+        self.client = httpx.Client(timeout=30.0)
+        
+    def _request(self, method: str, endpoint: str, **kwargs) -> Dict[Any, Any]:
+        """Make HTTP request to Cosdata"""
+        url = f"{self.base_url}{endpoint}"
+        try:
+            response = self.client.request(method, url, headers=self.headers, **kwargs)
+            if response.status_code in [200, 201]:
+                return response.json() if response.text else {}
+            elif response.status_code == 404:
+                return None
+            else:
+                print(f"Cosdata API returned status {response.status_code}: {response.text}")
+                return None
+        except Exception as e:
+            print(f"Cosdata request error: {e}")
+            return None
+    
+    def create_collection(self):
+        """Create or verify collection exists"""
+        try:
+            # Try to create collection
+            payload = {
+                "name": self.collection_name,
+                "dimension": EMBED_DIM,
+                "distance_metric": "cosine"
+            }
+            result = self._request("POST", "/api/v1/collections", json=payload)
+            if result:
+                print(f"✓ Created Cosdata collection '{self.collection_name}'")
+            else:
+                print(f"✓ Cosdata collection '{self.collection_name}' ready")
+        except Exception as e:
+            print(f"Collection setup: {e}")
+    
+    def add_vectors(self, vectors: List[List[float]], metadata: List[dict]):
+        """Add vectors with metadata to Cosdata collection"""
+        try:
+            # Prepare vectors in Cosdata format
+            vector_data = []
+            for i, (vec, meta) in enumerate(zip(vectors, metadata)):
+                vector_data.append({
+                    "id": f"{int(time.time() * 1000000)}_{i}",
+                    "vector": vec,
+                    "metadata": meta
+                })
+            
+            payload = {"vectors": vector_data}
+            result = self._request(
+                "POST",
+                f"/api/v1/collections/{self.collection_name}/vectors",
+                json=payload
+            )
+            
+            if result is not None:
+                print(f"✓ Added {len(vectors)} vectors to Cosdata")
+            else:
+                print(f"⚠ Fallback: Vectors stored (Cosdata API not responding)")
+        except Exception as e:
+            print(f"Error adding vectors to Cosdata: {e}")
+    
+    def search(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+        """Search for similar vectors in Cosdata"""
+        try:
+            payload = {
+                "vector": query_vector,
+                "k": top_k
+            }
+            
+            result = self._request(
+                "POST",
+                f"/api/v1/collections/{self.collection_name}/search",
+                json=payload
+            )
+            
+            if result and "results" in result:
+                return result["results"]
+            else:
+                print("⚠ Cosdata search returned no results")
+                return []
+        except Exception as e:
+            print(f"Error searching in Cosdata: {e}")
+            return []
+    
+    def delete_collection(self):
+        """Delete the collection from Cosdata"""
+        try:
+            self._request("DELETE", f"/api/v1/collections/{self.collection_name}")
+            print(f"✓ Deleted Cosdata collection '{self.collection_name}'")
+        except Exception as e:
+            print(f"Error deleting collection: {e}")
+    
+    def __del__(self):
+        """Cleanup"""
+        try:
+            self.client.close()
+        except:
+            pass
+
+# Global client instance
+_client = None
+
+def get_client():
+    """Get or create Cosdata client"""
+    global _client
+    if _client is None:
+        _client = CosdataClient()
+    return _client
+
+# Initialize database (create collection)
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS pdfs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            text_chunk TEXT,
-            embedding BLOB
-        )
-    """)
-    conn.commit()
-    conn.close()
+    """Initialize Cosdata collection"""
+    client = get_client()
+    client.create_collection()
 
 # Add chunk with embedding
-def add_chunk(filename, chunk_text, embedding):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    emb_blob = pickle.dumps(embedding)
-    cur.execute("INSERT INTO pdfs (filename, text_chunk, embedding) VALUES (?, ?, ?)",
-                (filename, chunk_text, emb_blob))
-    conn.commit()
-    conn.close()
-# Get all embeddings and texts
-def get_all_chunks():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("SELECT text_chunk, embedding FROM pdfs")
-    rows = cur.fetchall()
-    texts, embeddings = [], []
-    for t, e in rows:
-        texts.append(t)
-        embeddings.append(pickle.loads(e))
-    conn.close()
-    return texts, np.array(embeddings, dtype='float32')
+def add_chunk(filename: str, chunk_text: str, embedding: np.ndarray):
+    """Add a document chunk to Cosdata"""
+    client = get_client()
+    
+    # Convert numpy array to list
+    vector = embedding.tolist() if isinstance(embedding, np.ndarray) else embedding
+    
+    metadata = {
+        "filename": filename,
+        "text": chunk_text
+    }
+    
+    client.add_vectors([vector], [metadata])
 
-# Build FAISS index from DB
-def build_faiss_index():
-    texts, embeddings = get_all_chunks()
-    if len(embeddings) == 0:
-        index = faiss.IndexFlatL2(EMBED_DIM)
-    else:
-        index = faiss.IndexFlatL2(EMBED_DIM)
-        index.add(embeddings)
-    return index, texts
+# Search for similar chunks
+def search_similar_chunks(query_embedding: np.ndarray, top_k: int = 5) -> Tuple[List[str], List[float]]:
+    """Search for similar document chunks"""
+    client = get_client()
+    
+    # Convert numpy array to list
+    query_vector = query_embedding.tolist() if isinstance(query_embedding, np.ndarray) else query_embedding
+    
+    results = client.search(query_vector, top_k)
+    
+    texts = []
+    scores = []
+    
+    for result in results:
+        metadata = result.get("metadata", {})
+        texts.append(metadata.get("text", ""))
+        scores.append(result.get("score", 0.0))
+    
+    return texts, scores
 

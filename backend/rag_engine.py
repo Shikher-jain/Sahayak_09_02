@@ -1,18 +1,19 @@
 from backend.embedder import embed_text
-from backend.db import build_faiss_index
+from backend.db import search_similar_chunks
 import numpy as np
 
 def answer_question(question, top_k=5):
     try:
         query_vec = embed_text(question)
-        index, texts = build_faiss_index()
         
-        if index.ntotal == 0:
+        # Search using Cosdata
+        retrieved_chunks, scores = search_similar_chunks(query_vec, top_k)
+        
+        if not retrieved_chunks:
             return "No documents uploaded yet. Please upload PDF/image files first."
         
-        # Search using FAISS
-        D, I = index.search(np.array([query_vec], dtype='float32'), top_k)
-        retrieved_chunks = [texts[i] for i in I[0] if i < len(texts)]
+        # Filter out empty chunks
+        retrieved_chunks = [chunk for chunk in retrieved_chunks if chunk.strip()]
         
         if not retrieved_chunks:
             return "No relevant information found in uploaded documents."

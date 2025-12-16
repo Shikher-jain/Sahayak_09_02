@@ -6,6 +6,8 @@ Pillow
 requests
 youtube-transcript-api
 beautifulsoup4
-faiss-cpu
 sentence-transformers
 numpy
+httpx
+streamlit
+httpx
