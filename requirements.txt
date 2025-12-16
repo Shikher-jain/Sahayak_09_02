@@ -9,4 +9,5 @@ beautifulsoup4
 numpy
 httpx
 streamlit
-sentence-transformers
+# sentence-transformers  # Disabled for memory-constrained deployments
+# For ML embeddings, use HuggingFace Inference API or separate service

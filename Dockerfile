@@ -17,10 +17,7 @@ ENV PYTHONUNBUFFERED=1
 # Copy requirements
 COPY requirements.txt ./
 
-# Install CPU-only PyTorch first (prevents CUDA bloat)
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-
-# Install other dependencies
+# Install dependencies (no PyTorch for lightweight deployment)
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
