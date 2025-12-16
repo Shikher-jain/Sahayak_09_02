@@ -7,8 +7,8 @@
 start-cosdata
 # Enter: admin
 
-# Terminal 2: Start Backend
-cd backend && python -m uvicorn main:app --reload
+# Terminal 2: Start Backend (from project root)
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Terminal 3: Start Frontend
 cd frontend && streamlit run app.py

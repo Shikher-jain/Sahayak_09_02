@@ -44,8 +44,8 @@ This installs:
 
 **Terminal 1 - Backend:**
 ```bash
-cd backend
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# Run from project root, not from backend folder
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Terminal 2 - Frontend:**
