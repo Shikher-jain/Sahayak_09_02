@@ -27,11 +27,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Cosdata on startup
+# Initialize Cosdata on startup - FAIL FAST
 print("\n" + "="*60)
 print("🚀 Initializing Sahayak AI Teaching Assistant")
 print("="*60)
-init_db()
+try:
+    init_db()
+except RuntimeError as e:
+    print(f"\n{'='*60}")
+    print(f"❌ STARTUP FAILED")
+    print(f"{'='*60}")
+    print(f"{e}")
+    print(f"{'='*60}\n")
+    raise SystemExit(1)
 print("="*60 + "\n")
 
 @app.post("/upload")
@@ -66,28 +74,21 @@ async def upload_file(file: UploadFile = File(...)):
             if chunk:
                 chunks.append(chunk)
         print(f"  ✓ Split into {len(chunks)} chunks")
+        
         # Generate embeddings and store in Cosdata
-        fallback_used = False
         for idx, chunk in enumerate(chunks):
             emb = embed_text(chunk)
-            # add_chunk does not return fallback status, so call add_vectors directly
-            client = get_client()
-            used_fallback = client.add_vectors([emb.tolist()], [{"filename": filename, "text": chunk}])
-            if used_fallback:
-                fallback_used = True
-        if fallback_used:
-            print(f"  ⚠ Cosdata unavailable, used in-memory fallback for this upload.")
-        else:
-            print(f"  ✓ Stored in Cosdata Vector DB\n")
+            add_chunk(filename, chunk, emb)
+        
+        print(f"  ✓ Stored {len(chunks)} chunks in Cosdata\n")
+        
         return {
             "message": f"✓ {filename} uploaded successfully!",
             "details": {
                 "filename": filename,
                 "text_length": len(text),
-                "chunks_created": len(chunks),
-                "cosdata_fallback": fallback_used
-            },
-            "warning": "Cosdata unavailable, used in-memory fallback. Data is not persistent." if fallback_used else None
+                "chunks_created": len(chunks)
+            }
         }
     except Exception as e:
         print(f"  ✗ Error: {str(e)}\n")
@@ -95,10 +96,24 @@ async def upload_file(file: UploadFile = File(...)):
     
 @app.get("/cosdata_health")
 def cosdata_health():
-    """Check Cosdata vector DB health from backend"""
+    """Check Cosdata vector DB connectivity"""
     client = get_client()
-    healthy = client.health()
-    return {"cosdata_healthy": healthy}
+    try:
+        is_reachable = client.ping()
+        collection_ok = client.collection_exists()
+        return {
+            "cosdata_reachable": is_reachable,
+            "collection_exists": collection_ok,
+            "base_url": client.base_url,
+            "status": "healthy" if (is_reachable and collection_ok) else "degraded"
+        }
+    except Exception as e:
+        return {
+            "cosdata_reachable": False,
+            "error": str(e),
+            "base_url": client.base_url,
+            "status": "unhealthy"
+        }
 
 @app.get("/ask")
 def ask(question: str):
