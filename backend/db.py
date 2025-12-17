@@ -43,19 +43,34 @@ class CosdataClient:
     def create_collection(self):
         """Create or verify collection exists"""
         try:
-            # Try to create collection
+            # Try multiple API endpoints for collection creation
+            endpoints = [
+                "/api/v1/collections",
+                "/collections",
+                f"/collections/{self.collection_name}"
+            ]
+            
             payload = {
                 "name": self.collection_name,
                 "dimension": EMBED_DIM,
-                "distance_metric": "cosine"
+                "distance_metric": "cosine",
+                "distance": "cosine"  # Alternative key name
             }
-            result = self._request("POST", "/api/v1/collections", json=payload)
-            if result:
-                print(f"✓ Created Cosdata collection '{self.collection_name}'")
+            
+            for endpoint in endpoints:
+                result = self._request("POST", endpoint, json=payload)
+                if result is not None:
+                    print(f"✓ Created Cosdata collection '{self.collection_name}' using {endpoint}")
+                    return
+            
+            # If all fail, try PUT method
+            result = self._request("PUT", f"/collections/{self.collection_name}", json=payload)
+            if result is not None:
+                print(f"✓ Created Cosdata collection '{self.collection_name}' using PUT")
             else:
-                print(f"✓ Cosdata collection '{self.collection_name}' ready")
+                print(f"⚠ Could not create collection via API, will use in-memory fallback")
         except Exception as e:
-            print(f"Collection setup: {e}")
+            print(f"Collection setup error: {e}")
     
     def add_vectors(self, vectors: List[List[float]], metadata: List[dict]):
         """Add vectors with metadata to Cosdata collection"""
