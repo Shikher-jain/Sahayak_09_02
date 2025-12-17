@@ -26,7 +26,7 @@ class CosdataClient:
             "Content-Type": "application/json",
             "X-Admin-Key": self.admin_key
         }
-        self.client = httpx.Client(timeout=30.0)
+        self.client = httpx.Client(timeout=180.0)
         
     def _request(self, method: str, endpoint: str, **kwargs) -> Dict[Any, Any]:
         """Make HTTP request to Cosdata"""

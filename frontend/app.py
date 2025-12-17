@@ -45,7 +45,7 @@ question = st.text_input("❓ Ask your question", placeholder="e.g., What is thi
 if file:
     with st.spinner("Uploading and processing..."):
         try:
-            res = requests.post(f"{BACKEND_URL}/upload", files={"file": file}, timeout=60)
+            res = requests.post(f"{BACKEND_URL}/upload", files={"file": file}, timeout=120)
             response_data = res.json()
             
             if "error" in response_data:
@@ -71,7 +71,7 @@ if st.button("🔍 Ask", use_container_width=True):
     else:
         with st.spinner("Searching for answer..."):
             try:
-                res = requests.get(f"{BACKEND_URL}/ask", params={"question": question}, timeout=30)
+                res = requests.get(f"{BACKEND_URL}/ask", params={"question": question}, timeout=120)
                 response_data = res.json()
                 
                 if "error" in response_data:
