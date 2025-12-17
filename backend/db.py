@@ -41,8 +41,17 @@ class CosdataClient:
                 print(f"Cosdata API returned status {response.status_code}: {response.text}")
                 return None
         except Exception as e:
-            print(f"Cosdata request error: {e}")
+            print(f"[Cosdata] Request error: {e} (falling back to in-memory storage)")
             return None
+        def health(self) -> bool:
+            """Check if Cosdata is reachable and collection exists"""
+            try:
+                result = self._request("GET", f"/api/v1/collections/{self.collection_name}")
+                if result is not None:
+                    return True
+            except Exception:
+                pass
+            return False
     
     def create_collection(self):
         """Create or verify collection exists"""
@@ -79,7 +88,7 @@ class CosdataClient:
     def add_vectors(self, vectors: List[List[float]], metadata: List[dict]):
         """Add vectors with metadata to Cosdata collection"""
         global _memory_vectors, _memory_metadata
-        
+        used_fallback = False
         try:
             # Try COSDATA HTTP API first
             vector_data = []
@@ -89,25 +98,23 @@ class CosdataClient:
                     "vector": vec,
                     "metadata": meta
                 })
-            
             payload = {"vectors": vector_data}
             result = self._request(
                 "POST",
                 f"/api/v1/collections/{self.collection_name}/vectors",
                 json=payload
             )
-            
             if result is not None:
                 print(f"✓ Added {len(vectors)} vectors to Cosdata")
-                return
+                return False  # Not using fallback
         except Exception as e:
-            pass
-        
+            used_fallback = True
         # Fallback to in-memory storage
         for vec, meta in zip(vectors, metadata):
             _memory_vectors.append(vec)
             _memory_metadata.append(meta)
-        print(f"✓ Added {len(vectors)} vectors to in-memory storage (total: {len(_memory_vectors)})")
+        print(f"[Fallback] Added {len(vectors)} vectors to in-memory storage (total: {len(_memory_vectors)})")
+        return True  # Used fallback
     
     def search(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
         """Search for similar vectors in Cosdata"""
