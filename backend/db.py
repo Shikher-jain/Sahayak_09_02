@@ -11,6 +11,10 @@ COSDATA_ADMIN_KEY = os.getenv("COSDATA_ADMIN_KEY", "admin123")
 COLLECTION_NAME = "pdf_documents"
 EMBED_DIM = 384  # for 'all-MiniLM-L6-v2'
 
+# In-memory fallback storage when COSDATA HTTP API is not fully available
+_memory_vectors = []
+_memory_metadata = []
+
 class CosdataClient:
     """Client for Cosdata Vector Database"""
     
@@ -74,8 +78,10 @@ class CosdataClient:
     
     def add_vectors(self, vectors: List[List[float]], metadata: List[dict]):
         """Add vectors with metadata to Cosdata collection"""
+        global _memory_vectors, _memory_metadata
+        
         try:
-            # Prepare vectors in Cosdata format
+            # Try COSDATA HTTP API first
             vector_data = []
             for i, (vec, meta) in enumerate(zip(vectors, metadata)):
                 vector_data.append({
@@ -93,14 +99,15 @@ class CosdataClient:
             
             if result is not None:
                 print(f"✓ Added {len(vectors)} vectors to Cosdata")
-            else:
-                print(f"⚠ Fallback: Vectors stored (Cosdata API not responding)")
+                return
         except Exception as e:
-            print(f"Error adding vectors to Cosdata: {e}")
-    
-    def search(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
-        """Search for similar vectors in Cosdata"""
+            pass
+        
+        # Fallback to in-memory storage
+        global _memory_vectors, _memory_metadata
+        
         try:
+            # Try COSDATA HTTP API first
             payload = {
                 "vector": query_vector,
                 "k": top_k
@@ -113,6 +120,37 @@ class CosdataClient:
             )
             
             if result and "results" in result:
+                return result["results"]
+        except Exception as e:
+            pass
+        
+        # Fallback to in-memory similarity search
+        if not _memory_vectors:
+            print("⚠ No vectors in memory storage")
+            return []
+        
+        # Compute cosine similarity
+        query_np = np.array(query_vector)
+        similarities = []
+        for i, vec in enumerate(_memory_vectors):
+            vec_np = np.array(vec)
+            similarity = np.dot(query_np, vec_np) / (np.linalg.norm(query_np) * np.linalg.norm(vec_np))
+            similarities.append((i, similarity))
+        
+        # Sort and get top_k
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        top_results = similarities[:top_k]
+        
+        # Format results
+        results = []
+        for idx, score in top_results:
+            results.append({
+                "metadata": _memory_metadata[idx],
+                "score": float(score)
+            })
+        
+        print(f"✓ Found {len(results)} results from in-memory storage")
+        return results and "results" in result:
                 return result["results"]
             else:
                 print("⚠ Cosdata search returned no results")
