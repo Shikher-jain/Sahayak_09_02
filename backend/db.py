@@ -104,6 +104,13 @@ class CosdataClient:
             pass
         
         # Fallback to in-memory storage
+        for vec, meta in zip(vectors, metadata):
+            _memory_vectors.append(vec)
+            _memory_metadata.append(meta)
+        print(f"✓ Added {len(vectors)} vectors to in-memory storage (total: {len(_memory_vectors)})")
+    
+    def search(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+        """Search for similar vectors in Cosdata"""
         global _memory_vectors, _memory_metadata
         
         try:
@@ -150,14 +157,7 @@ class CosdataClient:
             })
         
         print(f"✓ Found {len(results)} results from in-memory storage")
-        return results and "results" in result:
-                return result["results"]
-            else:
-                print("⚠ Cosdata search returned no results")
-                return []
-        except Exception as e:
-            print(f"Error searching in Cosdata: {e}")
-            return []
+        return results
     
     def delete_collection(self):
         """Delete the collection from Cosdata"""
